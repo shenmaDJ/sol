@@ -18,7 +18,7 @@ const ADMIN_TOKEN = 'zzl320322';
 
 // 允许的来源域名
 const ALLOWED_ORIGINS = [
-  'https://你的域名.vercel.app',
+  'https://sol-gray.vercel.app',
   'http://localhost:3000',
   'http://127.0.0.1:5500',
   'http://127.0.0.1:3000',
