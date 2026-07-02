@@ -14,7 +14,7 @@
 const { kv } = require('@vercel/kv');
 
 // 从环境变量读取管理令牌
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin123456';
+const ADMIN_TOKEN = 'admin123456';
 
 // 允许的来源域名
 const ALLOWED_ORIGINS = [
